@@ -1,15 +1,22 @@
 import express from "express";
 import multer from "multer";
 import cors from "cors";
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 import db from "./db"; // importa tu instancia de SQLite
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
-// Ruta absoluta a la carpeta
+export interface Medico {
+  id: number;
+  fecha_carga: string;          // formato ISO (YYYY-MM-DD)
+  especialidad: string;
+  nombre_medico: string;
+  apellido_medico: string;
+  categoria: string;            // puede ser 'A', 'B', etc.
+  obra_social: string;
+  dias_atencion: string[];      // array de días como strings
+}
+
+type RawMedico = Omit<Medico, "dias_atencion"> & { dias_atencion: string };
+
 
 const app = express();
 app.use(cors());
@@ -102,37 +109,75 @@ app.delete("/api/eliminar-medico", express.json(), (req, res) => {
 
   if (info.changes > 0) {
     res.json({ success: true });
+    return
   } else {
     res.status(404).json({ success: false, message: "Médico no encontrado." });
+    return
   }
 });
 
 // Actualizar los dias y campos parciales
-app.patch("/api/actualizar-dias", express.json(), (req, res) => {
-  const { nombre_medico, apellido_medico, especialidad, dias_atencion } = req.body;
-
-  if (!nombre_medico || !apellido_medico || !especialidad || !dias_atencion) {
-    res.status(400).json({ success: false, message: "Faltan datos requeridos." });
-    return
-  }
-
-  const stmt = db.prepare(`
-    UPDATE medicos
-    SET dias_atencion = ?
-    WHERE LOWER(nombre_medico) = LOWER(?) AND LOWER(apellido_medico) = LOWER(?) AND LOWER(especialidad) = LOWER(?)
-  `);
-
-  const info = stmt.run(
-    JSON.stringify(dias_atencion),
+app.patch("/api/actualizar-medico", express.json(), (req, res) => {
+  const {
     nombre_medico,
     apellido_medico,
-    especialidad
-  );
+    especialidad,
+    dias_atencion,
+    obra_social
+  } = req.body;
+
+  if (!nombre_medico || !apellido_medico || !especialidad || !dias_atencion) {
+     res.status(400).json({ success: false, message: "Faltan datos requeridos." });
+     return
+  }
+
+  // Construir SQL dinámicamente según si se informa obra_social
+  let sql = `
+    UPDATE medicos
+    SET dias_atencion = ?
+  `;
+  const params: (string | number)[] = [JSON.stringify(dias_atencion)];
+
+  if (obra_social && obra_social.trim() !== "") {
+    sql += `, obra_social = ?`;
+    params.push(obra_social.trim());
+  }
+
+  sql += `
+    WHERE LOWER(nombre_medico) = LOWER(?) 
+      AND LOWER(apellido_medico) = LOWER(?) 
+      AND LOWER(especialidad) = LOWER(?)
+  `;
+
+  params.push(nombre_medico, apellido_medico, especialidad);
+
+  const stmt = db.prepare(sql);
+  const info = stmt.run(...params);
 
   if (info.changes > 0) {
     res.json({ success: true, updated: info.changes });
   } else {
     res.status(404).json({ success: false, message: "Médico no encontrado." });
+  }
+});
+
+
+app.get("/api/medicos", (req, res) => {
+  try {
+    const stmt = db.prepare("SELECT * FROM medicos ORDER BY apellido_medico ASC, nombre_medico ASC");
+   const rawMedicos = stmt.all() as RawMedico[];
+
+const medicos: Medico[] = rawMedicos.map((m) => ({
+  ...m,
+  dias_atencion: JSON.parse(m.dias_atencion)
+}));
+
+    res.json(medicos);
+    return
+  } catch (err) {
+    console.error("Error al listar médicos:", err);
+    res.status(500).json({ success: false, error: err.message });
+    return
   }
 });
 
