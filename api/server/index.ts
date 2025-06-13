@@ -116,50 +116,72 @@ app.delete("/api/eliminar-medico", express.json(), (req, res) => {
   }
 });
 
+
+// En SQL, SET se usa para especificar los campos que vas a modificar en un UPDATE.
+
+// Sintaxis general
+// sql
+// 
+// 
+// UPDATE tabla
+// SET campo1 = valor1, campo2 = valor2
+// WHERE condicion;
+
 // Actualizar los dias y campos parciales
 app.patch("/api/actualizar-medico", express.json(), (req, res) => {
   const {
     nombre_medico,
     apellido_medico,
-    especialidad,
     dias_atencion,
     obra_social
   } = req.body;
 
-  if (!nombre_medico || !apellido_medico || !especialidad || !dias_atencion) {
-     res.status(400).json({ success: false, message: "Faltan datos requeridos." });
-     return
+  if (!nombre_medico || !apellido_medico) {
+    res.status(400).json({ success: false, message: "Faltan nombre o apellido." });
+    return
   }
 
-  // Construir SQL dinámicamente según si se informa obra_social
-  let sql = `
-    UPDATE medicos
-    SET dias_atencion = ?
-  `;
-  const params: (string | number)[] = [JSON.stringify(dias_atencion)];
+  const campos: string[] = [];
+  const params: (string | number)[] = [];
+
+  // Agregar campos a actualizar dinámicamente
+  if (Array.isArray(dias_atencion) && dias_atencion.length > 0) {
+    campos.push("dias_atencion = ?");
+    params.push(JSON.stringify(dias_atencion));
+  }
 
   if (obra_social && obra_social.trim() !== "") {
-    sql += `, obra_social = ?`;
+    campos.push("obra_social = ?");
     params.push(obra_social.trim());
   }
 
-  sql += `
-    WHERE LOWER(nombre_medico) = LOWER(?) 
-      AND LOWER(apellido_medico) = LOWER(?) 
-      AND LOWER(especialidad) = LOWER(?)
+  if (campos.length === 0) {
+    res.status(400).json({ success: false, message: "No se proporcionó ningún dato para actualizar." });
+    return
+  }
+
+  // Construcción dinámica del SQL
+  const sql = `
+    UPDATE medicos
+    SET ${campos.join(", ")}
+    WHERE LOWER(nombre_medico) = LOWER(?)
+      AND LOWER(apellido_medico) = LOWER(?)
   `;
 
-  params.push(nombre_medico, apellido_medico, especialidad);
+  params.push(nombre_medico, apellido_medico);
 
   const stmt = db.prepare(sql);
   const info = stmt.run(...params);
 
   if (info.changes > 0) {
     res.json({ success: true, updated: info.changes });
+    return
   } else {
     res.status(404).json({ success: false, message: "Médico no encontrado." });
+    return
   }
 });
+
 
 
 app.get("/api/medicos", (req, res) => {

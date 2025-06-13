@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Calendar, User, Stethoscope, Shield, CreditCard, Clock, Send,  AlertCircle, Plus, Edit, Trash2, Search } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -30,7 +30,7 @@ interface Medico {
   diasAtencion: string[];
 }
 
-type ActiveSection = 'registro' | 'actualizar' | 'eliminar';
+type ActiveSection = 'registro' | 'actualizar' | 'eliminar' | 'send_actualizar'
 
 const especialidades = [
   'Cardiología',
@@ -66,6 +66,16 @@ const categorias = [
 //   'Particular'
 // ];
 
+interface SearchMedicos {
+  apellido_medico: string;
+  nombre_medico: string;
+  especialidad: string;
+  fecha_carga: string;
+  id: number;
+  obra_social: string;
+  categoria: string;
+}
+
 const diasSemana = [
   'Lunes',
   'Martes',
@@ -75,9 +85,14 @@ const diasSemana = [
   'Sábado'
 ];
 
+type SelectMedicToSearch = string[];
+
+
+
 function App() {
   const [activeSection, setActiveSection] = useState<ActiveSection>('registro');
-  const [searchMedico , setSearchMedico] = useState<string>('');
+  const [searchMedicos , setSearchMedicos] = useState<SearchMedicos[]>([]);
+  const [selectedmedicoToSearch , setSelectedMedicoToSearch] = useState<SelectMedicToSearch>([]);
   const [formData, setFormData] = useState<FormData>({
     fechaCarga: new Date().toISOString().split('T')[0],
     especialidad: '',
@@ -90,12 +105,12 @@ function App() {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  // const [ setSearchTerm] = useState('');
   const [selectedMedico, setSelectedMedico] = useState<Medico | null>(null);
   const [medicos, setMedicos] = useState<Medico[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
 
-  
+
 
   const resetForm = () => {
     setFormData({
@@ -109,6 +124,8 @@ function App() {
     });
     setErrors({});
     setSelectedMedico(null);
+    setSearchMedicos([]);
+    setSelectedMedicoToSearch([]);
   };
 
   const validateForm = (): boolean => {
@@ -160,6 +177,22 @@ function App() {
     }
   };
 
+  
+
+  //   const handleInputChangeToUpdate = (field: keyof FormData, value: string) => {
+  //   setFormDataToUpdate(prev => ({
+  //     ...prev,
+  //     [field]: value
+  //   }));
+
+  //   if (errors[field]) {
+  //     setErrors(prev => ({
+  //       ...prev,
+  //       [field]: ''
+  //     }));
+  //   }
+  // };
+
   const handleDayToggle = (day: string) => {
     setFormData(prev => ({
       ...prev,
@@ -176,28 +209,28 @@ function App() {
     }
   };
 
-  const searchMedicos = async () => {
-    if (!searchTerm.trim()) {
-      toast.error('Por favor, ingrese un término de búsqueda');
-      return;
-    }
+  // const searchMedicos = async () => {
+  //   if (!searchTerm.trim()) {
+  //     toast.error('Por favor, ingrese un término de búsqueda');
+  //     return;
+  //   }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${BASE_URL_BACKEND}/api/medicos/search?q=${encodeURIComponent(searchTerm)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMedicos(data);
-      } else {
-        throw new Error('Error en la búsqueda');
-      }
-    } catch (error) {
-      console.error('Error searching medicos:', error);
-      toast.error('Error al buscar médicos. Por favor, intente nuevamente.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //   setIsLoading(true);
+  //   try {
+  //     const response = await fetch(`${BASE_URL_BACKEND}/api/medicos/search?q=${encodeURIComponent(searchTerm)}`);
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       setMedicos(data);
+  //     } else {
+  //       throw new Error('Error en la búsqueda');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error searching medicos:', error);
+  //     toast.error('Error al buscar médicos. Por favor, intente nuevamente.');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const loadMedicoData = (medico: Medico) => {
     setSelectedMedico(medico);
@@ -326,7 +359,7 @@ function App() {
         
         // Refresh the search results
         setMedicos(medicos.filter(m => m.id !== medicoId));
-        setSearchTerm('');
+       
       } else {
         throw new Error('Error en el servidor');
       }
@@ -353,12 +386,120 @@ function App() {
     }
   };
 
+  // Seleccionar el medico para actualizar o eliminar
+  // const handleSearchMedicos = (searchValue: string[]) => {
+  //   setSelectedMedicoToSearch(searchValue)
+
+  // }
+
+  // Traer los medicos
+  const handleGetMedicos = async () => {
+    try {
+      const response = await fetch(`${BASE_URL_BACKEND}/api/medicos`);
+      const medicosData = await response.json();
+      if (response.ok) {
+        setSearchMedicos(medicosData);
+      } else {
+        throw new Error('Error al obtener los médicos');
+      }
+      
+    } catch (error) {
+      console.log('Error al obtener los médicos:', error);
+      
+    }
+  }
+
+  useEffect(() => {
+    console.log("Medicos:", searchMedicos); 
+    
+  },[searchMedicos])
+
   const handleSectionChange = (section: ActiveSection) => {
+    if(section === "actualizar" || section === "eliminar") {
+      handleGetMedicos();
+    }
     setActiveSection(section);
     resetForm();
-    setSearchTerm('');
+    // setSearchTerm('');
     setMedicos([]);
   };
+
+
+  const handleUpdateMedico = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    console.log("nombre" , selectedmedicoToSearch[0]);
+    console.log("apellido", selectedmedicoToSearch[1]);
+    console.log("especialidad", formData.especialidad);
+    console.log("obra social", formData.obraSocial);
+    console.log("categoria", formData.categoria);
+    console.log("dias atencion", formData.diasAtencion);
+    
+try {
+  const response = await fetch(`${BASE_URL_BACKEND}/api/actualizar-medico`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      nombre_medico: selectedmedicoToSearch[0],
+      apellido_medico: selectedmedicoToSearch[1],
+      especialidad: formData.especialidad,
+      obra_social: formData.obraSocial,
+      categoria: formData.categoria,
+      dias_atencion: formData.diasAtencion
+    })
+  })
+
+  if (response.ok) {
+    const data = await response.json();
+    console.log("data", data);
+    toast.success('Médico actualizado exitosamente', {
+      duration: 4000,
+      position: 'top-center',
+      style: {
+        background: '#10B981',
+        color: 'white',
+        fontWeight: '600',
+        padding: '16px 24px',
+        borderRadius: '12px',
+        fontSize: '16px'
+      },
+      iconTheme: {
+        primary: 'white',
+        secondary: '#10B981',
+      },
+    });
+    
+    resetForm();
+    setSelectedMedico(null);
+    handleGetMedicos(); // Refrescar la lista de médicos
+  }
+
+} catch (error) {
+  console.error("Error al actualizar médico:", error);
+  toast.error('Error al actualizar médico. Por favor, intente nuevamente.', {
+    duration: 4000,
+    position: 'top-center',
+    style: {
+      background: '#EF4444',
+      color: 'white',
+      fontWeight: '600',
+      padding: '16px 24px',
+      borderRadius: '12px',
+      fontSize: '16px'
+    },
+    iconTheme: {
+      primary: 'white',
+      secondary: '#EF4444',
+    },
+  });
+  
+}finally {
+      setIsSubmitting(false);
+    }
+    
+  }
 
   const getSectionConfig = () => {
     switch (activeSection) {
@@ -388,6 +529,15 @@ function App() {
           buttonIcon: <Trash2 className="h-5 w-5" />,
           gradient: 'from-red-600 to-red-700',
           hoverGradient: 'hover:from-red-700 hover:to-red-800'
+        };
+          case 'send_actualizar':
+        return {
+          title: 'Actualizar Médico',
+          subtitle: '',
+          buttonText: 'Actualizar Médico',
+          buttonIcon: <Send className="h-5 w-5" />,
+          gradient: 'from-amber-600 to-amber-700',
+          hoverGradient: 'hover:from-amber-700 hover:to-amber-800'
         };
     }
   };
@@ -469,17 +619,91 @@ function App() {
                 <div className="flex space-x-4">
                   <div className="flex-1">
                      <select
-                    value={searchMedico}
-                    onChange={(e) => handleInputChange('especialidad', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    value={selectedmedicoToSearch.join(',')}
+                    onChange={(e) =>  setSelectedMedicoToSearch(e.target.value.split(','))}
+                    className={`w-full px-4 py-3  border rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.especialidad ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
-                    <option value="">Seleccione una especialidad</option>
-                    {especialidades.map((esp) => (
-                      <option key={esp} value={esp}>{esp}</option>
+                    <option value="">Seleccione un médico</option>
+                    {searchMedicos && searchMedicos.map((med) => (
+                      <option key={med.id} value={ [med.nombre_medico , med.apellido_medico] }> {med.nombre_medico + " " + med.apellido_medico}</option>
                     ))}
                   </select>
+                  <form onSubmit={(e) => handleUpdateMedico(e)} className='flex gap-4 flex-col py-4'>
+                     <div className="space-y-2">
+                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <CreditCard className="h-4 w-4 text-blue-600" />
+                  <span>Obra Social</span>
+                </label>
+             
+
+               <input
+                    type="text"
+                    value={formData.obraSocial}
+                    onChange={(e) => handleInputChange('obraSocial', e.target.value)}
+                    placeholder="Ingresa las obras sociales o su modalidad con las que trabaja"
+                    className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.obraSocial ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  />
+                  {errors.obraSocial && (
+                    <p className="text-red-600 text-sm flex items-center space-x-1">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{errors.obraSocial}</span>
+                    </p>
+                  )}
+              </div>
+
+              {/* Días de Atención */}
+              <div className="space-y-4">
+                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <span>Días de Atención</span>
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {diasSemana.map((dia) => (
+                    <button
+                      key={dia}
+                      type="button"
+                      onClick={() => handleDayToggle(dia)}
+                      className={`px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200 ${
+                        formData.diasAtencion.includes(dia)
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      {dia}
+                    </button>
+                  ))}
+                </div>
+                {errors.diasAtencion && (
+                  <p className="text-red-600 text-sm flex items-center space-x-1">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.diasAtencion}</span>
+                  </p>
+                )}
+              </div>
+              <div>
+                 <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full bg-gradient-to-r from-amber-600 to-amber-800 text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 hover:from-amber-700 hover:to-amber-800 focus:outline-none  focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Procesando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5" />
+                      <span>Actualizar</span>
+                    </>
+                  )}
+                </button>
+              </div>
+                  </form>
                     
                     {/* <input
                       type="text"
@@ -757,7 +981,7 @@ function App() {
           )}
 
           {/* Empty state for update/delete without selection */}
-          {((activeSection === 'actualizar' && !selectedMedico) || activeSection === 'eliminar') && medicos.length === 0 && searchTerm === '' && (
+          {/* {((activeSection === 'actualizar' && !selectedMedico) || activeSection === 'eliminar') && medicos.length === 0 && searchTerm === '' && (
             <div className="p-12 text-center">
               <div className="text-gray-400 mb-4">
                 <Search className="h-16 w-16 mx-auto" />
@@ -769,7 +993,7 @@ function App() {
                 Use el campo de búsqueda para encontrar el médico que desea {activeSection === 'actualizar' ? 'actualizar' : 'eliminar'}.
               </p>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>
