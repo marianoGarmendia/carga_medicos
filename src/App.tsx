@@ -259,7 +259,7 @@ function App() {
       const endpoint = activeSection === 'registro' ? '/api/guardar-medico' : `/api/medicos/${selectedMedico?.id}`;
       const method = activeSection === 'registro' ? 'POST' : 'PUT';
 
-      const response = await fetch(`${BASE_URL_BACKEND}${endpoint}`, {
+      const response = await fetch(`${endpoint}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
