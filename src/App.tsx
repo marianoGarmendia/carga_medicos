@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, User, Stethoscope, Shield, CreditCard, Clock, Send,  AlertCircle, Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Calendar, User, Stethoscope, Shield, CreditCard, Clock, Send,  AlertCircle, Plus, Edit, Trash2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 

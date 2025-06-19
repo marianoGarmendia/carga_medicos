@@ -3,13 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "server": "npx tsx ./api/server/index.ts",
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+ "scripts": {
+  "dev": "vite ",
+  "server": "npx tsx ./api/server/index.ts",
+  "build": "npm run build:server && npm run build:client",
+  "build:server": "tsc -p tsconfig.server.json",
+  "build:client": "vite build --outDir dist-client",
+  "start": "node dist/api/server/index.js"
+},
   "dependencies": {
     "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",

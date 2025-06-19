@@ -1,7 +1,9 @@
 import express from "express";
 import multer from "multer";
 import cors from "cors";
+import path from 'path';
 import db from "./db"; // importa tu instancia de SQLite
+
 
 
 export interface Medico {
@@ -24,6 +26,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Para manejar formularios
 
 const upload = multer(); // Solo campos de texto, no archivos
+
+const PORT = process.env.PORT || 3000;
+
+const clientPath = path.resolve(__dirname, '../../dist-client');
+app.use(express.static(clientPath));
+
+// Catch-all para SPA
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientPath, 'index.html'));
+});
+
+
 
 
 // Ruta para guardar JSON de médicos
@@ -205,6 +219,6 @@ const medicos: Medico[] = rawMedicos.map((m) => ({
 
 
 
-app.listen(3000, () => {
-  console.log("Servidor escuchando en http://localhost:3000");
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
