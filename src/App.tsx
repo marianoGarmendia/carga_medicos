@@ -259,7 +259,7 @@ function App() {
       const endpoint = activeSection === 'registro' ? '/api/guardar-medico' : `/api/medicos/${selectedMedico?.id}`;
       const method = activeSection === 'registro' ? 'POST' : 'PUT';
 
-      const response = await fetch(`${endpoint}`, {
+      const response = await fetch(`${BASE_URL_BACKEND}${endpoint}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -335,7 +335,7 @@ function App() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/medicos/${medicoId}`, {
+      const response = await fetch(`${BASE_URL_BACKEND}/api/medicos/${medicoId}`, {
         method: 'DELETE',
       });
 
