@@ -98,9 +98,10 @@ app.post("/api/guardar-medico", upload.none(), async (req, res) => {
     res.json({ success: true });
     return;
   } catch (err) {
-    console.error("Error al guardar médico:", err);
-    res.status(500).json({ success: false, error: err.message });
-    return;
+     const mensajeError = err instanceof Error ? err.message : String(err);
+  console.error("Error al guardar médico:", mensajeError);
+  res.status(500).json({ success: false, error: mensajeError });
+  return;
   }
 });
 
@@ -211,9 +212,10 @@ const medicos: Medico[] = rawMedicos.map((m) => ({
     res.json(medicos);
     return
   } catch (err) {
-    console.error("Error al listar médicos:", err);
-    res.status(500).json({ success: false, error: err.message });
-    return
+    const mensajeError = err instanceof Error ? err.message : String(err);
+  console.error("Error al guardar médico:", mensajeError);
+  res.status(500).json({ success: false, error: mensajeError });
+  return;
   }
 });
 
