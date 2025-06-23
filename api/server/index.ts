@@ -235,6 +235,9 @@ const medicos: Medico[] = rawMedicos.map((m) => ({
 // });
 import fs from 'fs';
 // app.use(express.static(clientPath));
+const clientPath = path.resolve("dist-client");
+
+app.use(express.static(clientPath));
 
 
 app.use((req, res) => {
