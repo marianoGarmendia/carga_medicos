@@ -238,7 +238,7 @@ import fs from 'fs';
 
 
 app.use((req, res) => {
-  const indexPath = path.join("./dist-client", "index.html");
+  const indexPath = path.resolve("dist-client", "index.html");
   fs.access(indexPath, fs.constants.F_OK, (err) => {
     if (err) {
       console.error('index.html no encontrado:', indexPath);
