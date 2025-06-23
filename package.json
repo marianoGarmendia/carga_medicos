@@ -9,7 +9,7 @@
   "build": "npm run build:server && npm run build:client",
   "build:server": "tsc -p tsconfig.server.json",
   "build:client": "vite build --outDir dist-client",
-  "start": "node dist/api/server/index.js"
+  "start": "node ./dist/index.js"
 },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

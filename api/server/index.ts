@@ -2,7 +2,12 @@ import express from "express";
 import multer from "multer";
 import cors from "cors";
 import path from 'path';
-import db from "./db"; // importa tu instancia de SQLite
+import db from "./db.js"; // importa tu instancia de SQLite
+
+// import { fileURLToPath } from 'url';
+
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 
 
@@ -29,13 +34,8 @@ const upload = multer(); // Solo campos de texto, no archivos
 
 const PORT = process.env.PORT || 3000;
 
-const clientPath = path.resolve(__dirname, '../../dist-client');
-app.use(express.static(clientPath));
+// const clientPath = path.resolve(__dirname, './dist-client');
 
-// Catch-all para SPA
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientPath, 'index.html'));
-});
 
 
 
@@ -217,6 +217,35 @@ const medicos: Medico[] = rawMedicos.map((m) => ({
   res.status(500).json({ success: false, error: mensajeError });
   return;
   }
+});
+
+
+// Servir frontend
+// app.use(express.static(clientPath));
+
+// Catch-all SOLO si el archivo existe
+// import fs from 'fs';
+// app.get('*', (req, res, next) => {
+//   const indexPath = path.join(clientPath, 'index.html');
+//   if (fs.existsSync(indexPath)) {
+//     res.sendFile(indexPath);
+//   } else {
+//     next(); // deja que el error se propague si falta
+//   }
+// });
+import fs from 'fs';
+// app.use(express.static(clientPath));
+
+
+app.use((req, res) => {
+  const indexPath = path.join("./dist-client", "index.html");
+  fs.access(indexPath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error('index.html no encontrado:', indexPath);
+      return res.status(500).send('index.html no disponible');
+    }
+    res.sendFile(indexPath);
+  });
 });
 
 
